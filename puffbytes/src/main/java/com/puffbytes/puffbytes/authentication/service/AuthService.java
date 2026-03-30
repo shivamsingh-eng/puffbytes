@@ -1,4 +1,5 @@
 package com.puffbytes.puffbytes.authentication.service;
+
 import com.puffbytes.puffbytes.authentication.dto.AuthResponse;
 import com.puffbytes.puffbytes.authentication.dto.LoginRequest;
 import com.puffbytes.puffbytes.authentication.dto.RegisterRequest;

@@ -5,6 +5,6 @@ import lombok.Data;
 
 @Data
 public class GoogleAuthRequest {
-    @NotBlank(message = "Email is required")
+    @NotBlank(message = "ID token is required")
     private String idToken;
 }

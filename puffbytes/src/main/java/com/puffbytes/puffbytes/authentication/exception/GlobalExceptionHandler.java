@@ -51,4 +51,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String,String>> handleException(Exception ex) {
+        Map<String, String> errors = new HashMap<>();
+        errors.put("Exception", "something went wrong");
+        return new ResponseEntity<>(errors, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
 }

@@ -4,7 +4,6 @@ import com.puffbytes.puffbytes.authentication.dto.*;
 import com.puffbytes.puffbytes.authentication.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
