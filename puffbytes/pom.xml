@@ -127,6 +127,17 @@
 			<artifactId>google-http-client-jackson2</artifactId>
 			<version>1.43.3</version>
 		</dependency>
+		<!-- dependency for mongodb connection -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-mongodb</artifactId>
+		</dependency>
+		<!-- dependency for model mapper-->
+		<dependency>
+			<groupId>org.modelmapper</groupId>
+			<artifactId>modelmapper</artifactId>
+			<version>3.1.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>

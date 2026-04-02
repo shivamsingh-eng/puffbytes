@@ -1,4 +1,4 @@
-package com.puffbytes.puffbytes.authentication.exception;
+package com.puffbytes.puffbytes.common.exception;
 
 public class InvalidCredentialsException extends RuntimeException {
     public InvalidCredentialsException(String message) {
