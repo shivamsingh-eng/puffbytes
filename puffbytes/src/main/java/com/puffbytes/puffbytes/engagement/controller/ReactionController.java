@@ -1,5 +1,7 @@
 package com.puffbytes.puffbytes.engagement.controller;
 
+import com.puffbytes.puffbytes.common.util.SecurityUtil;
+import com.puffbytes.puffbytes.upload.dto.ApiResponse;
 import com.puffbytes.puffbytes.engagement.dto.ReactionRequestDTO;
 import com.puffbytes.puffbytes.engagement.service.interfaces.ReactionService;
 import jakarta.validation.Valid;
@@ -14,17 +16,35 @@ public class ReactionController {
 
     private final ReactionService reactionService;
 
-    //add reaction to the post
-    @PostMapping("/{postId}/addreaction")
-    public ResponseEntity<String> reactToPost(@PathVariable String postId, @Valid @RequestBody ReactionRequestDTO request, @RequestHeader("X-User-Id") String userId) {
+    //Add / Update Reaction
+    @PostMapping("/{postId}/reaction")
+    public ResponseEntity<ApiResponse<String>> reactToPost(@PathVariable String postId, @Valid @RequestBody ReactionRequestDTO request) {
+        String userId = SecurityUtil.getCurrentUserId();
+
         reactionService.addReaction(postId, userId, request.getReactionType());
-        return ResponseEntity.ok("Reaction added successfully");
+
+        return ResponseEntity.ok(
+                ApiResponse.<String>builder()
+                        .success(true)
+                        .message("Reaction added successfully")
+                        .data(null)
+                        .build()
+        );
     }
 
-    //remove reaction from a post
-    @DeleteMapping("/{postId}/removereaction")
-    public ResponseEntity<String> unreactPost(@PathVariable String postId, @RequestHeader("X-User-Id") String userId) {
+    // Remove Reaction
+    @DeleteMapping("/{postId}/reaction")
+    public ResponseEntity<ApiResponse<String>> removeReaction(@PathVariable String postId) {
+        String userId = SecurityUtil.getCurrentUserId();
+
         reactionService.removeReaction(postId, userId);
-        return ResponseEntity.ok("Post unliked successfully");
+
+        return ResponseEntity.ok(
+                ApiResponse.<String>builder()
+                        .success(true)
+                        .message("Reaction removed successfully")
+                        .data(null)
+                        .build()
+        );
     }
 }

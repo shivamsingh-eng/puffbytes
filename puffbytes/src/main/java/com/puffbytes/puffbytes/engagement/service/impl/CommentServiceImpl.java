@@ -124,12 +124,10 @@ public class CommentServiceImpl implements CommentService {
                 .toList();
 
         // Step 2: fetch ALL replies in one query
-        List<Comment> allReplies =
-                commentRepository.findByParentCommentIdInAndIsDeletedFalse(parentIds);
+        List<Comment> allReplies = commentRepository.findByParentCommentIdInAndIsDeletedFalse(parentIds);
 
         // Step 3: group replies by parentId
-        Map<Long, List<Comment>> repliesMap =
-                allReplies.stream().collect(Collectors.groupingBy(Comment::getParentCommentId));
+        Map<Long, List<Comment>> repliesMap = allReplies.stream().collect(Collectors.groupingBy(Comment::getParentCommentId));
 
         // Step 4: map response
         return commentsPage.map(comment -> {
