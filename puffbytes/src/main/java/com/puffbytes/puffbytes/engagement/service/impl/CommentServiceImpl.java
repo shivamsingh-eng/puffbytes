@@ -3,6 +3,7 @@ package com.puffbytes.puffbytes.engagement.service.impl;
 import com.puffbytes.puffbytes.common.exception.CommentNotFoundException;
 import com.puffbytes.puffbytes.common.exception.ParentCommentNotFoundException;
 import com.puffbytes.puffbytes.common.exception.PostNotFoundException;
+import com.puffbytes.puffbytes.common.exception.UnauthorizedException;
 import com.puffbytes.puffbytes.engagement.dto.CommentRequestDTO;
 import com.puffbytes.puffbytes.engagement.dto.CommentResponseDTO;
 import com.puffbytes.puffbytes.engagement.entity.Comment;
@@ -69,7 +70,7 @@ public class CommentServiceImpl implements CommentService {
 
         // only owner can delete
         if (!comment.getUserId().equals(userId)) {
-            throw new RuntimeException("Unauthorized");
+            throw new UnauthorizedException("you are not authorized to delete this comment");
         }
 
         comment.setDeleted(true);
