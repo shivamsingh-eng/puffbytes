@@ -98,6 +98,16 @@ public class GlobalExceptionHandler {
         return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(AlreadyFollowingException.class)
+    public  ResponseEntity<Map<String, Object>> handleAlreadyFollowing(AlreadyFollowingException ex) {
+        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidFollowException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidFollow(InvalidFollowException ex) {
+        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     // 5. Runtime Exception (fallback for business logic)
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
