@@ -72,13 +72,39 @@ public class GlobalExceptionHandler {
         return buildResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // 4. Runtime Exception (fallback for business logic)
+    // 4. exceptions for engagement service
+    @ExceptionHandler(AlreadyLikedException.class)
+    public ResponseEntity<Map<String, Object>> handleAlreadyLiked(AlreadyLikedException ex) {
+        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ParentCommentNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleParentCommentNotFound(ParentCommentNotFoundException ex) {
+        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(CommentNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleCommentNotFound(CommentNotFoundException ex) {
+        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(PostNotFoundException.class)
+    public  ResponseEntity<Map<String, Object>> handlePostNotFound(PostNotFoundException ex) {
+        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ReactionNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleReactionNotFound(ReactionNotFoundException ex) {
+        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    // 5. Runtime Exception (fallback for business logic)
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
         return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
-    //5. Final Catch-All
+    //6. Final Catch-All
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleException(Exception ex) {
         return buildResponseEntity("Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
