@@ -1,7 +1,7 @@
 package com.puffbytes.puffbytes.upload.controller;
 
 import com.puffbytes.puffbytes.common.util.SecurityUtil;
-import com.puffbytes.puffbytes.upload.dto.ApiResponse;
+import com.puffbytes.puffbytes.common.dto.ApiResponse;
 import com.puffbytes.puffbytes.upload.dto.MediaResponseDTO;
 import com.puffbytes.puffbytes.upload.dto.MediaUploadResponseDTO;
 import com.puffbytes.puffbytes.upload.service.interfaces.MediaService;

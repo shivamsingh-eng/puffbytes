@@ -1,4 +1,4 @@
-package com.puffbytes.puffbytes.upload.dto;
+package com.puffbytes.puffbytes.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

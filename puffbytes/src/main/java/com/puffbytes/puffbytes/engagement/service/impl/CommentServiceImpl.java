@@ -2,7 +2,6 @@ package com.puffbytes.puffbytes.engagement.service.impl;
 
 import com.puffbytes.puffbytes.common.exception.CommentNotFoundException;
 import com.puffbytes.puffbytes.common.exception.ParentCommentNotFoundException;
-import com.puffbytes.puffbytes.common.exception.PostNotFoundException;
 import com.puffbytes.puffbytes.common.exception.UnauthorizedException;
 import com.puffbytes.puffbytes.engagement.dto.CommentRequestDTO;
 import com.puffbytes.puffbytes.engagement.dto.CommentResponseDTO;
@@ -106,12 +105,6 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public Page<CommentResponseDTO> getComments(String postId, int page, int size) {
-
-        boolean postExists = commentRepository.existsByPostId(postId) || statsRepository.existsById(postId);
-
-        if (!postExists) {
-            throw new PostNotFoundException("Post not found with id: " + postId);
-        }
 
         Pageable pageable = PageRequest.of(page, size);
 

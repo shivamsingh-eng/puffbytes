@@ -13,6 +13,8 @@ import com.puffbytes.puffbytes.upload.service.interfaces.MediaService;
 import com.puffbytes.puffbytes.upload.util.FileValidator;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,6 +24,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class MediaServiceImpl implements MediaService {
+
+    private static final Logger log = LoggerFactory.getLogger(MediaServiceImpl.class);
 
     private final MediaRepository mediaRepository;
     private final ModelMapper modelMapper;
@@ -47,7 +51,7 @@ public class MediaServiceImpl implements MediaService {
                 .build();
 
         Media saved = mediaRepository.save(media);
-        System.out.println("Saved Media: " + saved);
+        log.debug("Saved media id={} userId={}", saved.getId(), saved.getUserId());
 
         // Using ModelMapper
         MediaUploadResponseDTO response = modelMapper.map(saved, MediaUploadResponseDTO.class);
