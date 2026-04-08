@@ -1,5 +1,6 @@
 package com.puffbytes.puffbytes.upload.service.interfaces;
 
+import com.puffbytes.puffbytes.upload.dto.FeedMediaDTO;
 import com.puffbytes.puffbytes.upload.dto.MediaResponseDTO;
 import com.puffbytes.puffbytes.upload.dto.MediaUploadResponseDTO;
 import org.springframework.web.multipart.MultipartFile;
@@ -10,4 +11,5 @@ public interface MediaService {
     MediaUploadResponseDTO uploadImage(MultipartFile file, String userId);
     List<MediaResponseDTO> getUserMedia(String userId);
     void deleteMedia(String mediaId, String userId);
+    List<FeedMediaDTO> getMediaByUserIds(List<String> userIds);
 }

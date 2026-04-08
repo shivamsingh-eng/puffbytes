@@ -1,5 +1,6 @@
 package com.puffbytes.puffbytes.upload.service.impl;
 
+import com.puffbytes.puffbytes.upload.dto.FeedMediaDTO;
 import com.puffbytes.puffbytes.upload.dto.MediaResponseDTO;
 import com.puffbytes.puffbytes.upload.dto.MediaUploadResponseDTO;
 import com.puffbytes.puffbytes.upload.entity.Media;
@@ -81,5 +82,16 @@ public class MediaServiceImpl implements MediaService {
         media.setUpdatedAt(LocalDateTime.now());
 
         mediaRepository.save(media);
+    }
+
+    @Override
+    public List<FeedMediaDTO> getMediaByUserIds(List<String> userIds) {
+
+        List<Media> mediaList =
+                mediaRepository.findByUserIdInAndStatusOrderByCreatedAtDesc(userIds, MediaStatus.ACTIVE);
+
+        return mediaList.stream()
+                .map(media -> modelMapper.map(media, FeedMediaDTO.class))
+                .toList();
     }
 }

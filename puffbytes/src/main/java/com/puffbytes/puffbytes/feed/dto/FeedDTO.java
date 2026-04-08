@@ -1,5 +1,6 @@
 package com.puffbytes.puffbytes.feed.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -21,5 +22,6 @@ public class FeedDTO {
     private LocalDateTime createdAt;
 
     // internal use (ranking)
+    @JsonIgnore
     private double score;
 }
