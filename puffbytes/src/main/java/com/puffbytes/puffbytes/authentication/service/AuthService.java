@@ -1,25 +1,28 @@
 package com.puffbytes.puffbytes.authentication.service;
 
+import com.puffbytes.puffbytes.authentication.config.GithubClientProperties;
+import com.puffbytes.puffbytes.authentication.config.JwtProperties;
 import com.puffbytes.puffbytes.authentication.dto.AuthResponse;
 import com.puffbytes.puffbytes.authentication.dto.LoginRequest;
 import com.puffbytes.puffbytes.authentication.dto.RegisterRequest;
 import com.puffbytes.puffbytes.authentication.entity.RefreshToken;
 import com.puffbytes.puffbytes.authentication.entity.User;
 import com.puffbytes.puffbytes.authentication.enums.Provider;
-import com.puffbytes.puffbytes.common.exception.EmailAlreadyExistException;
+import com.puffbytes.puffbytes.common.exception.EmailAlreadyExistsException;
 import com.puffbytes.puffbytes.common.exception.InvalidCredentialsException;
 import com.puffbytes.puffbytes.common.exception.InvalidOrExpiredTokenException;
-import com.puffbytes.puffbytes.authentication.util.UserNotFoundException;
 import com.puffbytes.puffbytes.authentication.repository.RefreshTokenRepository;
 import com.puffbytes.puffbytes.authentication.repository.UserRepository;
 import com.puffbytes.puffbytes.authentication.util.GoogleTokenVerifier;
 import com.puffbytes.puffbytes.authentication.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -30,12 +33,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthService {
 
-    @Value("${github.client.id}")
-    private String githubClientId;
-
-    @Value("${github.client.secret}")
-    private String githubClientSecret;
-
+    private final GithubClientProperties githubClient;
+    private final JwtProperties jwtProperties;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -43,10 +42,14 @@ public class AuthService {
     private final GoogleTokenVerifier googleTokenVerifier;
     private final RestTemplate restTemplate;
 
+    private Duration refreshTtl() {
+        return Duration.ofMillis(jwtProperties.getRefresh().getExpiration());
+    }
+
     public void register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new EmailAlreadyExistException("Email already exists");
+            throw new EmailAlreadyExistsException("Email already exists");
         }
 
         User user = User.builder()
@@ -64,19 +67,19 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new InvalidCredentialsException("Invalid credentials");
+        User user = userRepository.findByEmail(request.getEmail()).orElse(null);
+        if (user == null
+                || user.getPassword() == null
+                || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Invalid email or password");
         }
 
-        String accessToken = jwtUtil.generateToken(user.getEmail());
+        String accessToken = jwtUtil.generateToken(user.getId());
         String refreshToken = UUID.randomUUID().toString();
 
         RefreshToken token = RefreshToken.builder()
                 .token(refreshToken)
-                .expiryDate(LocalDateTime.now().plusDays(7))
+                .expiryDate(LocalDateTime.now().plus(refreshTtl()))
                 .user(user)
                 .build();
 
@@ -97,7 +100,7 @@ public class AuthService {
             throw new InvalidOrExpiredTokenException("Refresh token expired");
         }
 
-        String newAccessToken = jwtUtil.generateToken(token.getUser().getEmail());
+        String newAccessToken = jwtUtil.generateToken(token.getUser().getId());
 
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
@@ -136,13 +139,13 @@ public class AuthService {
                     return userRepository.save(newUser);
                 });
 
-        String accessToken = jwtUtil.generateToken(user.getEmail());
+        String accessToken = jwtUtil.generateToken(user.getId());
         String refreshToken = UUID.randomUUID().toString();
 
         RefreshToken token = RefreshToken.builder()
                 .token(refreshToken)
                 .user(user)
-                .expiryDate(LocalDateTime.now().plusDays(7))
+                .expiryDate(LocalDateTime.now().plus(refreshTtl()))
                 .build();
 
         refreshTokenRepository.save(token);
@@ -155,51 +158,61 @@ public class AuthService {
 
     public AuthResponse githubLogin(String code) {
 
-        // 1. Exchange code get access token
         String tokenUrl = "https://github.com/login/oauth/access_token";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         Map<String, String> params = new HashMap<>();
-        params.put("client_id", githubClientId);
-        params.put("client_secret", githubClientSecret);
+        params.put("client_id", githubClient.getId());
+        params.put("client_secret", githubClient.getSecret());
         params.put("code", code);
 
         HttpEntity<Map<String, String>> request = new HttpEntity<>(params, headers);
 
-        ResponseEntity<Map> tokenResponse = restTemplate.postForEntity(tokenUrl, request, Map.class);
+        ResponseEntity<Map<String, Object>> tokenResponse = restTemplate.exchange(
+                tokenUrl,
+                HttpMethod.POST,
+                request,
+                new ParameterizedTypeReference<>() {}
+        );
 
-        String accessToken = (String) tokenResponse.getBody().get("access_token");
+        Map<String, Object> tokenBody = tokenResponse.getBody();
+        if (tokenBody == null) {
+            throw new InvalidOrExpiredTokenException("Failed to get GitHub access token");
+        }
+        Object at = tokenBody.get("access_token");
+        String accessToken = at != null ? at.toString() : null;
 
         if (accessToken == null) {
             throw new InvalidOrExpiredTokenException("Failed to get GitHub access token");
         }
 
-        // 2. Get basic user info
         HttpHeaders userHeaders = new HttpHeaders();
         userHeaders.setBearerAuth(accessToken);
 
-        HttpEntity<?> userRequest = new HttpEntity<>(userHeaders);
+        HttpEntity<Void> userRequest = new HttpEntity<>(userHeaders);
 
-        ResponseEntity<Map> userResponse = restTemplate.exchange(
+        ResponseEntity<Map<String, Object>> userResponse = restTemplate.exchange(
                 "https://api.github.com/user",
                 HttpMethod.GET,
                 userRequest,
-                Map.class
+                new ParameterizedTypeReference<>() {}
         );
 
         Map<String, Object> userData = userResponse.getBody();
+        if (userData == null) {
+            throw new InvalidOrExpiredTokenException("Failed to read GitHub user");
+        }
 
         String githubId = String.valueOf(userData.get("id"));
-        String username = (String) userData.get("login");
+        String username = userData.get("login") != null ? userData.get("login").toString() : null;
 
-        // 3. Fetch emails
-        ResponseEntity<List> emailResponse = restTemplate.exchange(
+        ResponseEntity<List<Map<String, Object>>> emailResponse = restTemplate.exchange(
                 "https://api.github.com/user/emails",
                 HttpMethod.GET,
                 userRequest,
-                List.class
+                new ParameterizedTypeReference<>() {}
         );
 
         List<Map<String, Object>> emails = emailResponse.getBody();
@@ -212,19 +225,17 @@ public class AuthService {
                 Boolean verified = (Boolean) e.get("verified");
 
                 if (Boolean.TRUE.equals(primary) && Boolean.TRUE.equals(verified)) {
-                    email = (String) e.get("email");
+                    Object ev = e.get("email");
+                    email = ev != null ? ev.toString() : null;
                     break;
                 }
             }
         }
 
-        // 4. Fallback if email not found
         if (email == null) {
-            // fallback: use providerId-based unique email
             email = "github_" + githubId + "@puffbytes.com";
         }
 
-        // 5. Find or create user
         String finalEmail = email;
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> userRepository.save(
@@ -239,19 +250,17 @@ public class AuthService {
                                 .build()
                 ));
 
-        // 6. Generate JWT + Refresh Token
-        String jwt = jwtUtil.generateToken(user.getEmail());
+        String jwt = jwtUtil.generateToken(user.getId());
         String refreshToken = UUID.randomUUID().toString();
 
         refreshTokenRepository.save(
                 RefreshToken.builder()
                         .token(refreshToken)
                         .user(user)
-                        .expiryDate(LocalDateTime.now().plusDays(7))
+                        .expiryDate(LocalDateTime.now().plus(refreshTtl()))
                         .build()
         );
 
-        // 7. Return response
         return AuthResponse.builder()
                 .accessToken(jwt)
                 .refreshToken(refreshToken)

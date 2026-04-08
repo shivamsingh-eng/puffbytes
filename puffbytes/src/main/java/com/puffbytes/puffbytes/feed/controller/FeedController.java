@@ -1,9 +1,9 @@
 package com.puffbytes.puffbytes.feed.controller;
 
+import com.puffbytes.puffbytes.common.dto.ApiResponse;
 import com.puffbytes.puffbytes.common.util.SecurityUtil;
 import com.puffbytes.puffbytes.feed.dto.FeedDTO;
 import com.puffbytes.puffbytes.feed.service.interfaces.FeedService;
-import com.puffbytes.puffbytes.upload.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

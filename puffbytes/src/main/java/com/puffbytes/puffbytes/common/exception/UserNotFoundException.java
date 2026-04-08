@@ -1,6 +1,7 @@
-package com.puffbytes.puffbytes.authentication.util;
+package com.puffbytes.puffbytes.common.exception;
 
 public class UserNotFoundException extends RuntimeException {
+
     public UserNotFoundException(String message) {
         super(message);
     }

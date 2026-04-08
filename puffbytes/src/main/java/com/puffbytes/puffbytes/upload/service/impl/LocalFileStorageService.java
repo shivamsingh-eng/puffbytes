@@ -1,28 +1,34 @@
 package com.puffbytes.puffbytes.upload.service.impl;
 
 import com.puffbytes.puffbytes.common.exception.FileStorageException;
+import com.puffbytes.puffbytes.upload.config.StorageProperties;
 import com.puffbytes.puffbytes.upload.service.interfaces.FileStorageService;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
+
 @Service
+@RequiredArgsConstructor
 public class LocalFileStorageService implements FileStorageService {
 
-    private static final String UPLOAD_DIR = System.getProperty("user.dir") + File.separator + "uploads" + File.separator;
+    private static final Logger log = LoggerFactory.getLogger(LocalFileStorageService.class);
+
+    private final StorageProperties storageProperties;
 
     @Override
     public String uploadFile(MultipartFile file) {
 
         try {
-            String uploadDir = System.getProperty("user.dir") + File.separator + "uploads" + File.separator;
-
-            File directory = new File(uploadDir);
-            if (!directory.exists()) {
-                directory.mkdirs();
-            }
+            Path uploadDir = resolveUploadDir();
+            Files.createDirectories(uploadDir);
 
             String originalName = file.getOriginalFilename();
             String extension = "";
@@ -33,17 +39,28 @@ public class LocalFileStorageService implements FileStorageService {
 
             String fileName = UUID.randomUUID() + extension;
 
-            File destination = new File(uploadDir + fileName);
+            Path destination = uploadDir.resolve(fileName);
+            log.debug("Saving file to {}", destination.toAbsolutePath());
 
-            System.out.println("Saving file to: " + destination.getAbsolutePath()); // DEBUG
+            file.transferTo(destination.toFile());
 
-            file.transferTo(destination);
-
-            return "http://localhost:8080/uploads/" + fileName;
+            String base = storageProperties.getPublicBaseUrl();
+            if (base.endsWith("/")) {
+                base = base.substring(0, base.length() - 1);
+            }
+            return base + "/" + fileName;
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("File upload failed", e);
             throw new FileStorageException("Failed to upload file");
         }
+    }
+
+    private Path resolveUploadDir() {
+        Path p = Paths.get(storageProperties.getUploadDirectory());
+        if (!p.isAbsolute()) {
+            p = Paths.get(System.getProperty("user.dir")).resolve(p);
+        }
+        return p;
     }
 }
