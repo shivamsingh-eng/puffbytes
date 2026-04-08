@@ -2,8 +2,10 @@ package com.puffbytes.puffbytes.authentication.controller;
 
 import com.puffbytes.puffbytes.authentication.dto.*;
 import com.puffbytes.puffbytes.authentication.service.AuthService;
+import com.puffbytes.puffbytes.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,8 +16,15 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public String register(@Valid @RequestBody RegisterRequest request) {authService.register(request);
-        return "User registered successfully";
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message("User registered successfully")
+                        .data(null)
+                        .build()
+        );
     }
 
     @PostMapping("/login")
@@ -29,18 +38,24 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public String logout(@RequestParam String refreshToken) {
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestParam String refreshToken) {
         authService.logout(refreshToken);
-        return "Logged out successfully";
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message("Logged out successfully")
+                        .data(null)
+                        .build()
+        );
     }
 
     @PostMapping("/sso/google")
-    public AuthResponse googleLogin(@RequestBody GoogleAuthRequest request) {
+    public AuthResponse googleLogin(@Valid @RequestBody GoogleAuthRequest request) {
         return authService.googleLogin(request.getIdToken());
     }
 
     @PostMapping("/sso/github")
-    public AuthResponse githubLogin(@RequestBody GithubAuthRequest request) {
+    public AuthResponse githubLogin(@Valid @RequestBody GithubAuthRequest request) {
         return authService.githubLogin(request.getCode());
     }
 }

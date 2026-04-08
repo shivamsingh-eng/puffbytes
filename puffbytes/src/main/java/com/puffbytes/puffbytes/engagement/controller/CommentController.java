@@ -1,7 +1,7 @@
 package com.puffbytes.puffbytes.engagement.controller;
 
 import com.puffbytes.puffbytes.common.util.SecurityUtil;
-import com.puffbytes.puffbytes.upload.dto.ApiResponse;
+import com.puffbytes.puffbytes.common.dto.ApiResponse;
 import com.puffbytes.puffbytes.engagement.dto.CommentRequestDTO;
 import com.puffbytes.puffbytes.engagement.dto.CommentResponseDTO;
 import com.puffbytes.puffbytes.engagement.service.interfaces.CommentService;

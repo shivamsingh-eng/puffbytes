@@ -1,26 +1,28 @@
 package com.puffbytes.puffbytes.authentication.util;
 
-import com.google.api.client.googleapis.auth.oauth2.*;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.puffbytes.puffbytes.authentication.config.GoogleClientProperties;
 import com.puffbytes.puffbytes.common.exception.InvalidOrExpiredTokenException;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 
 @Component
+@RequiredArgsConstructor
 public class GoogleTokenVerifier {
 
-    @Value("${google.client.id}")
-    private String clientId;
+    private final GoogleClientProperties googleClient;
 
     public GoogleIdToken.Payload verify(String idTokenString) {
 
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier
                     .Builder(new NetHttpTransport(), JacksonFactory.getDefaultInstance())
-                    .setAudience(Collections.singletonList(clientId))
+                    .setAudience(Collections.singletonList(googleClient.getId()))
                     .build();
 
             GoogleIdToken idToken = verifier.verify(idTokenString);

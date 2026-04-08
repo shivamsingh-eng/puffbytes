@@ -2,7 +2,7 @@ package com.puffbytes.puffbytes.engagement.controller;
 
 import com.puffbytes.puffbytes.engagement.service.interfaces.FollowService;
 import com.puffbytes.puffbytes.common.util.SecurityUtil;
-import com.puffbytes.puffbytes.upload.dto.ApiResponse;
+import com.puffbytes.puffbytes.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
