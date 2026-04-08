@@ -1,4 +1,12 @@
 package com.puffbytes.puffbytes.engagement.service.interfaces;
 
-public class FollowService {
+import java.util.List;
+
+public interface FollowService {
+
+    void follow(String userId, String targetUserId);
+
+    void unfollow(String userId, String targetUserId);
+
+    List<String> getFollowing(String userId);
 }
