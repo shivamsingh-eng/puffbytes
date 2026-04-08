@@ -1,6 +1,7 @@
 package com.puffbytes.puffbytes.common.exception;
 
-import com.puffbytes.puffbytes.authentication.util.UserNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,7 +15,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 1. Validation Errors (DTO validation)
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
 
@@ -30,9 +32,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    //2. Auth Exceptions
-    @ExceptionHandler(EmailAlreadyExistException.class)
-    public ResponseEntity<Map<String, Object>> handleEmailAlreadyExists(EmailAlreadyExistException ex) {
+    @ExceptionHandler(UnauthenticatedException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthenticated(UnauthenticatedException ex) {
+        return buildResponseEntity(ex.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
         return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
@@ -51,7 +57,6 @@ public class GlobalExceptionHandler {
         return buildResponseEntity(ex.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 
-    //3. Upload / Media Exceptions
     @ExceptionHandler(FileValidationException.class)
     public ResponseEntity<Map<String, Object>> handleFileValidation(FileValidationException ex) {
         return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
@@ -72,7 +77,6 @@ public class GlobalExceptionHandler {
         return buildResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // 4. exceptions for engagement service
     @ExceptionHandler(AlreadyLikedException.class)
     public ResponseEntity<Map<String, Object>> handleAlreadyLiked(AlreadyLikedException ex) {
         return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
@@ -85,32 +89,31 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CommentNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleCommentNotFound(CommentNotFoundException ex) {
-        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        return buildResponseEntity(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(PostNotFoundException.class)
-    public  ResponseEntity<Map<String, Object>> handlePostNotFound(PostNotFoundException ex) {
-        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Map<String, Object>> handlePostNotFound(PostNotFoundException ex) {
+        return buildResponseEntity(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(ReactionNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleReactionNotFound(ReactionNotFoundException ex) {
-        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        return buildResponseEntity(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
-    // 5. Runtime Exception (fallback for business logic)
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
-        return buildResponseEntity(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        log.error("Unhandled runtime error", ex);
+        return buildResponseEntity("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    //6. Final Catch-All
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleException(Exception ex) {
+        log.error("Unhandled error", ex);
         return buildResponseEntity("Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    //Common Response Builder
     private Map<String, Object> buildResponse(String message, HttpStatus status) {
 
         Map<String, Object> response = new HashMap<>();
