@@ -8,12 +8,16 @@ import com.puffbytes.puffbytes.feed.service.interfaces.FeedService;
 import com.puffbytes.puffbytes.upload.dto.FeedMediaDTO;
 import com.puffbytes.puffbytes.upload.service.interfaces.MediaService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FeedServiceImpl implements FeedService {
@@ -21,60 +25,60 @@ public class FeedServiceImpl implements FeedService {
     private final FollowService followService;
     private final MediaService mediaService;
     private final PostEngagementStatsService postEngagementStatsService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public List<FeedDTO> getFeed(String userId, int page, int size) {
 
         /**
-         * STEP 1: Fetch all users that current user is following
-         * This defines WHOSE posts will appear in the feed. We also include the current user's own posts.
-         * Example:
-         * user follows → [ronit, pruthvi]
-         * final list → [ronit, pruthvi, currentUser]
+         * STEP 0: Create Cache Key
+         */
+        String cacheKey = "feed:" + userId + ":" + page + ":" + size;
+        log.info("Checking cache for key: {}", cacheKey);
+
+        /**
+         * STEP 1: Check Redis Cache
+         */
+        Object cached = redisTemplate.opsForValue().get(cacheKey);
+
+        if (cached != null) {
+            log.info("CACHE HIT for key: {}", cacheKey);
+            return (List<FeedDTO>) cached;
+        }
+
+        log.info("CACHE MISS for key: {}", cacheKey);
+
+        /**
+         * STEP 2: Get following users + self
          */
         List<String> followingIds = new ArrayList<>(followService.getFollowing(userId));
         followingIds.add(userId);
 
-
         /**
-         * STEP 2: Fetch all media (posts) from MongoDB
-         * We fetch posts of all users in followingIds using a single query.
-         * This avoids N+1 problem (calling DB multiple times).
-         * Internally: SELECT * FROM media WHERE userId IN (...) AND status = ACTIVE
+         * STEP 3: Fetch media (MongoDB)
          */
         List<FeedMediaDTO> mediaList = mediaService.getMediaByUserIds(followingIds);
 
-
-         // Edge Case Handling: If no posts exist, return empty list immediately.
         if (mediaList.isEmpty()) {
+            log.info("No posts found for user: {}", userId);
             return List.of();
         }
 
-
         /**
-         * STEP 3: Extract postIds from media
-         * These postIds will be used to fetch engagement data in bulk.
+         * STEP 4: Extract postIds
          */
         List<String> postIds = mediaList.stream()
                 .map(FeedMediaDTO::getId)
                 .toList();
 
-
         /**
-         * STEP 4: Fetch engagement stats (likes, comments) from PostgreSQL
-         * We fetch all stats in ONE query using postIds.
-         * This avoids N+1 queries.
-         * Output: Map<postId, PostEngagementStats>
+         * STEP 5: Fetch engagement stats (PostgreSQL)
          */
-        Map<String, PostEngagementStats> statsMap = postEngagementStatsService.getStatsByPostIds(postIds);
-
+        Map<String, PostEngagementStats> statsMap =
+                postEngagementStatsService.getStatsByPostIds(postIds);
 
         /**
-         * STEP 5: Merge Media + Engagement into FeedDTO
-         * We combine:
-         * - Media data (MongoDB)
-         * - Engagement data (PostgreSQL)
-         * If stats are missing -> default to 0
+         * STEP 6: Merge Media + Engagement
          */
         List<FeedDTO> feedList = new ArrayList<>(
                 mediaList.stream()
@@ -97,12 +101,8 @@ public class FeedServiceImpl implements FeedService {
                         .toList()
         );
 
-
         /**
-         * STEP 6: Apply Ranking Algorithm
-         * We compute a score for each post based on: Engagement -> reactions & comments AND Recency -> newer posts should rank higher
-         * Formula: score = (reactions * 2) + (comments * 3) + freshnessScore
-         * freshnessScore = 1 / (hoursSincePost + 1)
+         * STEP 7: Ranking Algorithm
          */
         feedList.forEach(feed -> {
 
@@ -120,18 +120,13 @@ public class FeedServiceImpl implements FeedService {
             feed.setScore(score);
         });
 
-
         /**
-         * STEP 7: Sort Feed by Score (Descending)
-         * Highest scored posts appear first in the feed.
+         * STEP 8: Sort by score
          */
         feedList.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
 
-
         /**
-         * STEP 8: Apply Pagination
-         * We return only a subset of posts based on page & size.
-         * page = 0, size = 10 -> first 10 posts
+         * STEP 9: Pagination
          */
         int start = page * size;
         int end = Math.min(start + size, feedList.size());
@@ -140,6 +135,14 @@ public class FeedServiceImpl implements FeedService {
             return List.of();
         }
 
-        return feedList.subList(start, end);
+        List<FeedDTO> result = feedList.subList(start, end);
+
+        /**
+         * STEP 10: Store in Redis (TTL = 5 minutes)
+         */
+        redisTemplate.opsForValue().set(cacheKey, result, Duration.ofMinutes(5));
+        log.info("Stored feed in cache for key: {}", cacheKey);
+
+        return result;
     }
 }
