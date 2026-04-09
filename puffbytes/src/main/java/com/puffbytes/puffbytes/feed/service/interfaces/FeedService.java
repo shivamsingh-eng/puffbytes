@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface FeedService {
 
-    List<FeedDTO> getFeedForUser(String userId);
+    List<FeedDTO> getFeed(String userId, int page, int size);
 }

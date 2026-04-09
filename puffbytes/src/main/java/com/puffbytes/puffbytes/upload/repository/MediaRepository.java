@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface MediaRepository extends MongoRepository<Media, String> {
     List<Media> findByUserIdAndStatusOrderByCreatedAtDesc(String userId, MediaStatus status);
     Optional<Media> findByIdAndStatus(String id, MediaStatus status);
+    List<Media> findByUserIdInAndStatusOrderByCreatedAtDesc(List<String> userIds, MediaStatus status);
 }

@@ -5,30 +5,31 @@ import com.puffbytes.puffbytes.common.util.SecurityUtil;
 import com.puffbytes.puffbytes.feed.dto.FeedDTO;
 import com.puffbytes.puffbytes.feed.service.interfaces.FeedService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/feed")
+@RequestMapping("/api/feed")
 @RequiredArgsConstructor
 public class FeedController {
 
     private final FeedService feedService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<FeedDTO>>> getFeed() {
+    public ApiResponse<List<FeedDTO>> getFeed(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+
         String userId = SecurityUtil.getCurrentUserId();
-        List<FeedDTO> items = feedService.getFeedForUser(userId);
-        return ResponseEntity.ok(
-                ApiResponse.<List<FeedDTO>>builder()
-                        .success(true)
-                        .message("Feed retrieved successfully")
-                        .data(items)
-                        .build()
-        );
+
+        List<FeedDTO> feed = feedService.getFeed(userId, page, size);
+
+        return ApiResponse.<List<FeedDTO>>builder()
+                .success(true)
+                .message("Feed fetched successfully")
+                .data(feed)
+                .build();
     }
 }

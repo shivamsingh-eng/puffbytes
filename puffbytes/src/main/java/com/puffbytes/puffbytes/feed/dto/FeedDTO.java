@@ -1,22 +1,30 @@
 package com.puffbytes.puffbytes.feed.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class FeedDTO {
+@Builder
+public class FeedDTO implements Serializable {
 
     private String postId;
-    private String authorUserId;
-    private String contentPreview;
-    private List<String> mediaUrls;
-    private LocalDateTime publishedAt;
+    private String userId;
+    private String imageUrl;
+
+    private long reactionCount;
+    private long commentCount;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
+
+    // internal use (ranking)
+    @JsonIgnore
+    private double score;
 }

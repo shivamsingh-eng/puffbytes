@@ -1,5 +1,7 @@
 package com.puffbytes.puffbytes.upload.service.impl;
 
+import com.puffbytes.puffbytes.common.service.CacheService;
+import com.puffbytes.puffbytes.upload.dto.FeedMediaDTO;
 import com.puffbytes.puffbytes.upload.dto.MediaResponseDTO;
 import com.puffbytes.puffbytes.upload.dto.MediaUploadResponseDTO;
 import com.puffbytes.puffbytes.upload.entity.Media;
@@ -26,10 +28,10 @@ import java.util.List;
 public class MediaServiceImpl implements MediaService {
 
     private static final Logger log = LoggerFactory.getLogger(MediaServiceImpl.class);
-
     private final MediaRepository mediaRepository;
     private final ModelMapper modelMapper;
     private final FileStorageService fileStorageService;
+    private final CacheService cacheService;
 
     @Override
     public MediaUploadResponseDTO uploadImage(MultipartFile file, String userId) {
@@ -52,6 +54,7 @@ public class MediaServiceImpl implements MediaService {
 
         Media saved = mediaRepository.save(media);
         log.debug("Saved media id={} userId={}", saved.getId(), saved.getUserId());
+        cacheService.evictFeedCache(userId);
 
         // Using ModelMapper
         MediaUploadResponseDTO response = modelMapper.map(saved, MediaUploadResponseDTO.class);
@@ -85,5 +88,16 @@ public class MediaServiceImpl implements MediaService {
         media.setUpdatedAt(LocalDateTime.now());
 
         mediaRepository.save(media);
+    }
+
+    @Override
+    public List<FeedMediaDTO> getMediaByUserIds(List<String> userIds) {
+
+        List<Media> mediaList =
+                mediaRepository.findByUserIdInAndStatusOrderByCreatedAtDesc(userIds, MediaStatus.ACTIVE);
+
+        return mediaList.stream()
+                .map(media -> modelMapper.map(media, FeedMediaDTO.class))
+                .toList();
     }
 }
