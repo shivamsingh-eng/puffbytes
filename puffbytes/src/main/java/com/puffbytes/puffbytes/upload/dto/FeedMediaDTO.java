@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class FeedMediaDTO {
 
     private String id;
-    private String userId;   // ✅ needed for feed
+    private String userId;   //needed for feed
     private String mediaUrl;
     private String mediaType;
     private LocalDateTime createdAt;
