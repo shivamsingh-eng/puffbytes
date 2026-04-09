@@ -22,14 +22,4 @@ public class CacheService {
             redisTemplate.delete(keys);
         }
     }
-
-    public void evictFeedCacheForFollowers(String userId) {
-
-        String pattern = "feed:" + userId + ":*";
-        Set<String> keys = redisTemplate.keys(pattern);
-
-        if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
-        }
-    }
 }
